@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/colors';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
@@ -64,6 +65,15 @@ function LoadingDots() {
 }
 
 export default function VerificationPendingScreen() {
+    // Auto-navigate to Verification Complete after 3 seconds
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            router.replace('/verification-complete');
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, []);
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <StatusBar style="light" />

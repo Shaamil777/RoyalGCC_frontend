@@ -12,25 +12,28 @@ interface StepIndicatorProps {
 }
 
 /**
- * Two-step progress indicator with gold active underline.
+ * Two-step progress indicator with gold active/completed underline.
+ * Steps before the current step are shown as completed (gold line).
  */
 export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
     return (
         <View style={styles.container}>
             {steps.map((step, index) => {
                 const isActive = index === currentStep;
+                const isCompleted = index < currentStep;
+                const isHighlighted = isActive || isCompleted;
                 return (
                     <View key={index} style={styles.step}>
                         <View
                             style={[
                                 styles.line,
-                                isActive ? styles.lineActive : styles.lineInactive,
+                                isHighlighted ? styles.lineActive : styles.lineInactive,
                             ]}
                         />
                         <Text
                             style={[
                                 styles.label,
-                                isActive ? styles.labelActive : styles.labelInactive,
+                                isHighlighted ? styles.labelActive : styles.labelInactive,
                             ]}
                         >
                             {step.label}

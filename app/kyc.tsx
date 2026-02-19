@@ -1,5 +1,6 @@
 import { FormInput, StepIndicator } from '@/components/kyc';
 import { AppColors } from '@/constants/colors';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -22,18 +23,39 @@ const KYC_STEPS = [
     { label: 'Documents' },
 ];
 
+/**
+ * Formats a Date object into DD-MM-YYYY string.
+ */
+function formatDate(date: Date): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
 export default function KycScreen() {
     const [currentStep, setCurrentStep] = useState(0);
     const [fullName, setFullName] = useState('');
-    const [dateOfBirth, setDateOfBirth] = useState('');
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const [address, setAddress] = useState('');
 
-    const isFormValid = fullName.trim().length > 0 && dateOfBirth.trim().length > 0 && address.trim().length > 0;
+    const dateOfBirthText = selectedDate ? formatDate(selectedDate) : '';
+
+    const isFormValid = fullName.trim().length > 0 && selectedDate !== null && address.trim().length > 0;
+
+    const handleDateChange = (event: DateTimePickerEvent, date?: Date) => {
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+        if (event.type === 'set' && date) {
+            setSelectedDate(date);
+        }
+    };
 
     const handleDatePress = () => {
-        // TODO: Show native date picker
-        // For now, allow manual text input
-        Alert.alert('Date Picker', 'Native date picker will be integrated here.');
+        Keyboard.dismiss();
+        setShowDatePicker(true);
     };
 
     const handleContinue = () => {
@@ -45,6 +67,12 @@ export default function KycScreen() {
         // Navigate to Documents step
         router.push('/kyc-documents');
     };
+
+    // Max date = today (user must be born in the past)
+    const maxDate = new Date();
+    // Min date = 120 years ago
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 120);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -77,13 +105,38 @@ export default function KycScreen() {
 
                             <FormInput
                                 label="Date of Birth"
-                                value={dateOfBirth}
-                                onChangeText={setDateOfBirth}
+                                value={dateOfBirthText}
                                 placeholder="dd-mm-yyyy"
+                                editable={false}
+                                onPress={handleDatePress}
                                 rightIcon={
                                     <Text style={styles.calendarIcon}>📅</Text>
                                 }
                             />
+
+                            {/* Date Picker - iOS inline or Android dialog */}
+                            {showDatePicker && (
+                                <View>
+                                    <DateTimePicker
+                                        value={selectedDate || new Date(2000, 0, 1)}
+                                        mode="date"
+                                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        onChange={handleDateChange}
+                                        maximumDate={maxDate}
+                                        minimumDate={minDate}
+                                        themeVariant="dark"
+                                    />
+                                    {Platform.OS === 'ios' && (
+                                        <TouchableOpacity
+                                            style={styles.datePickerDone}
+                                            onPress={() => setShowDatePicker(false)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={styles.datePickerDoneText}>Done</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
 
                             <FormInput
                                 label="Address"
@@ -142,6 +195,17 @@ const styles = StyleSheet.create({
     },
     calendarIcon: {
         fontSize: 18,
+    },
+    datePickerDone: {
+        alignSelf: 'flex-end',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        marginTop: 4,
+    },
+    datePickerDoneText: {
+        color: AppColors.gold,
+        fontSize: 16,
+        fontWeight: '600',
     },
     continueButton: {
         backgroundColor: AppColors.gold,
