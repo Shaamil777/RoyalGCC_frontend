@@ -21,6 +21,11 @@ export default function RootLayout() {
         <Stack.Screen name="kyc" options={{ headerShown: false }} />
         <Stack.Screen name="kyc-documents" options={{ headerShown: false }} />
         <Stack.Screen name="verification-pending" options={{ headerShown: false }} />
+        <Stack.Screen name="verification-complete" options={{ headerShown: false }} />
+        <Stack.Screen name="deposit" options={{ headerShown: false }} />
+        <Stack.Screen name="exchange" options={{ headerShown: false }} />
+        <Stack.Screen name="withdraw" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

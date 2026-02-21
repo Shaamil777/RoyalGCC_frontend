@@ -47,8 +47,8 @@ export default function VerificationCompleteScreen() {
     }, [scaleAnim, fadeAnim, buttonSlide]);
 
     const handleContinue = () => {
-        // Navigate to the main app / home
-        router.replace('/');
+        // Navigate to the main app home (tabs)
+        router.replace('/(tabs)' as any);
     };
 
     return (
