@@ -25,6 +25,7 @@ export default function RootLayout() {
         <Stack.Screen name="deposit" options={{ headerShown: false }} />
         <Stack.Screen name="exchange" options={{ headerShown: false }} />
         <Stack.Screen name="withdraw" options={{ headerShown: false }} />
+        <Stack.Screen name="referral" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
