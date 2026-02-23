@@ -56,11 +56,11 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="referral"
+                name="bank"
                 options={{
-                    title: 'Referral',
+                    title: 'Bank',
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="🎁" label="Referral" focused={focused} />
+                        <TabIcon icon="🏦" label="Bank" focused={focused} />
                     ),
                 }}
             />
