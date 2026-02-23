@@ -112,7 +112,7 @@ export default function ProfileScreen() {
                         <View style={styles.avatar}>
                             <Text style={styles.avatarIcon}>✦</Text>
                         </View>
-                        <View style={{ flex: 1 }}>
+                        <View style={styles.flexFill}>
                             <Text style={styles.userName}>User #12345</Text>
                             <Text style={styles.memberSince}>Member since Feb 2026</Text>
                         </View>
@@ -141,7 +141,7 @@ export default function ProfileScreen() {
                         icon="✓"
                         label="KYC Status"
                         subtitle="Verified"
-                        subtitleColor="#22C55E"
+                        subtitleColor={AppColors.success}
                         showArrow={true}
                     />
                 </View>
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
                         label="Referral Program"
                         badge="Earn 0.3%"
                         badgeColor={AppColors.gold}
-                        badgeBg="rgba(184, 150, 12, 0.15)"
+                        badgeBg={AppColors.goldBg}
                         showArrow={true}
                         onPress={() => router.push('/referral' as any)}
                     />
@@ -183,7 +183,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
 
                 {/* Spacer for bottom */}
-                <View style={{ height: 24 }} />
+                <View style={styles.bottomSpacer} />
             </ScrollView>
 
             {/* ==================== CHANGE PASSWORD MODAL ==================== */}
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
 
     // User Card
     userCard: {
-        backgroundColor: 'rgba(184, 150, 12, 0.12)',
+        backgroundColor: AppColors.goldBgSubtle,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(184, 150, 12, 0.3)',
+        borderColor: AppColors.goldBorderSubtle,
         padding: 20,
         marginBottom: 24,
     },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     },
     kycBadge: {
         alignSelf: 'flex-start',
-        backgroundColor: 'rgba(34, 197, 94, 0.12)',
+        backgroundColor: AppColors.successBg,
         borderRadius: 20,
         paddingHorizontal: 14,
         paddingVertical: 6,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     kycBadgeText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#22C55E',
+        color: AppColors.success,
     },
 
     // Section Title
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
 
     // Badge
     badge: {
-        backgroundColor: 'rgba(184, 150, 12, 0.15)',
+        backgroundColor: AppColors.goldBg,
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -419,9 +419,9 @@ const styles = StyleSheet.create({
 
     // Logout
     logoutButton: {
-        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+        backgroundColor: AppColors.dangerBg,
         borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.3)',
+        borderColor: AppColors.dangerBorder,
         borderRadius: 14,
         paddingVertical: 18,
         alignItems: 'center',
@@ -430,13 +430,13 @@ const styles = StyleSheet.create({
     logoutText: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#EF4444',
+        color: AppColors.danger,
     },
 
     // =================== CHANGE PASSWORD MODAL ===================
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: AppColors.overlayDark,
         justifyContent: 'flex-end',
     },
     passwordModal: {
@@ -494,6 +494,12 @@ const styles = StyleSheet.create({
     changePasswordButtonText: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#000',
+        color: AppColors.textDark,
+    },
+    flexFill: {
+        flex: 1,
+    },
+    bottomSpacer: {
+        height: 24,
     },
 });

@@ -142,7 +142,7 @@ export default function ReferralScreen() {
                             <View style={styles.stepCircle}>
                                 <Text style={styles.stepNumber}>{item.step}</Text>
                             </View>
-                            <View style={{ flex: 1 }}>
+                            <View style={styles.flexFill}>
                                 <Text style={styles.howItWorksTitle}>{item.title}</Text>
                                 <Text style={styles.howItWorksDesc}>{item.description}</Text>
                             </View>
@@ -182,8 +182,8 @@ export default function ReferralScreen() {
                                 style={[
                                     styles.historyEarnings,
                                     item.status === 'active'
-                                        ? { color: '#22C55E' }
-                                        : { color: AppColors.textSecondary },
+                                        ? styles.earningsActive
+                                        : styles.earningsInactive,
                                 ]}
                             >
                                 {item.earnings}
@@ -192,7 +192,7 @@ export default function ReferralScreen() {
                     </View>
                 ))}
 
-                <View style={{ height: 24 }} />
+                <View style={styles.bottomSpacer} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -237,10 +237,10 @@ const styles = StyleSheet.create({
 
     // Earnings Card
     earningsCard: {
-        backgroundColor: 'rgba(184, 150, 12, 0.15)',
+        backgroundColor: AppColors.goldBg,
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: 'rgba(184, 150, 12, 0.35)',
+        borderColor: AppColors.goldBorder,
         padding: 22,
         marginBottom: 24,
     },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     shareButtonText: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#000',
+        color: AppColors.textDark,
     },
 
     // How It Works
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     stepNumber: {
         fontSize: 14,
         fontWeight: '800',
-        color: '#000',
+        color: AppColors.textDark,
     },
     howItWorksTitle: {
         fontSize: 15,
@@ -455,17 +455,17 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
     },
     statusActive: {
-        backgroundColor: 'rgba(34, 197, 94, 0.12)',
+        backgroundColor: AppColors.successBg,
     },
     statusInactive: {
-        backgroundColor: 'rgba(138, 143, 152, 0.12)',
+        backgroundColor: AppColors.inactiveBg,
     },
     statusText: {
         fontSize: 12,
         fontWeight: '600',
     },
     statusTextActive: {
-        color: '#22C55E',
+        color: AppColors.success,
     },
     statusTextInactive: {
         color: AppColors.textSecondary,
@@ -482,5 +482,17 @@ const styles = StyleSheet.create({
     historyEarnings: {
         fontSize: 15,
         fontWeight: '700',
+    },
+    flexFill: {
+        flex: 1,
+    },
+    bottomSpacer: {
+        height: 24,
+    },
+    earningsActive: {
+        color: AppColors.success,
+    },
+    earningsInactive: {
+        color: AppColors.textSecondary,
     },
 });
