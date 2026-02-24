@@ -1,9 +1,12 @@
 import { DocumentUpload, IdTypePicker, StepIndicator } from '@/components/kyc';
 import { AppColors } from '@/constants/colors';
-import { router } from 'expo-router';
+import { submitKyc } from '@/services/kyc';
+import { ApiError } from '@/services/api';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     ScrollView,
     StyleSheet,
@@ -19,10 +22,17 @@ const KYC_STEPS = [
 ];
 
 export default function KycDocumentsScreen() {
+    const { fullName, dateOfBirth, address } = useLocalSearchParams<{
+        fullName: string;
+        dateOfBirth: string;
+        address: string;
+    }>();
+
     const [idType, setIdType] = useState('Aadhaar Card');
     const [idFront, setIdFront] = useState<string | null>(null);
     const [idBack, setIdBack] = useState<string | null>(null);
     const [selfie, setSelfie] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
 
     const handleUpload = (
         type: 'front' | 'back' | 'selfie',
@@ -45,16 +55,30 @@ export default function KycDocumentsScreen() {
 
     const isFormValid = idFront && idBack && selfie;
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!isFormValid) {
             Alert.alert('Incomplete', 'Please upload all required documents.');
             return;
         }
 
-        // TODO: Submit documents to backend
-        console.log('Submitting KYC documents:', { idType, idFront, idBack, selfie });
-        // Navigate to verification pending screen
-        router.replace('/verification-pending');
+        setSubmitting(true);
+        try {
+            await submitKyc({
+                full_name: fullName || '',
+                date_of_birth: dateOfBirth || '',
+                address: address || '',
+                id_type: idType,
+                // When image picker is integrated, pass the actual file URI here:
+                // aadhaar_image: { uri: idFront, name: 'aadhaar.jpg', type: 'image/jpeg' },
+            });
+            // Navigate to verification pending screen
+            router.replace('/verification-pending');
+        } catch (error) {
+            const message = error instanceof ApiError ? error.message : 'Failed to submit KYC. Please try again.';
+            Alert.alert('Error', message);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (

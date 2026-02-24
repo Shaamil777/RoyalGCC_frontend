@@ -115,7 +115,7 @@ export default function BankScreen() {
                 ))}
             </ScrollView>
 
-            {/* ==================== ADD BANK ACCOUNT MODAL ==================== */}
+            {/* Add bank modal */}
             <Modal
                 visible={showAddBank}
                 transparent
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
         color: AppColors.textPrimary,
     },
 
-    // =================== MODAL ===================
+    // modal
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.7)',

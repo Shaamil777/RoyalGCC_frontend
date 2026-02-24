@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -30,13 +31,15 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        {SCREEN_NAMES.map((name) => (
-          <Stack.Screen key={name} name={name} options={hideHeaderOptions} />
-        ))}
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          {SCREEN_NAMES.map((name) => (
+            <Stack.Screen key={name} name={name} options={hideHeaderOptions} />
+          ))}
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

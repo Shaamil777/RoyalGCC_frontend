@@ -1,7 +1,9 @@
 import { AppColors } from '@/constants/colors';
+import { getOrders, ExchangeOrder } from '@/services/exchange';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     Modal,
     StyleSheet,
@@ -11,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ─── Types ───────────────────────────────────────────────
 type TransactionType = 'Deposit' | 'Exchange' | 'Withdraw';
 type TransactionStatus = 'Completed' | 'Pending' | 'Failed';
 type FilterTab = 'All' | 'Deposits' | 'Exchange' | 'Withdraw';
@@ -25,53 +26,42 @@ interface Transaction {
     hash: string;
 }
 
-// ─── Mock Data ───────────────────────────────────────────
-const TRANSACTIONS: Transaction[] = [
-    {
-        id: 'TXN001',
-        type: 'Deposit',
-        amount: '500.00 USDT',
-        date: '2026-02-05 14:30',
-        status: 'Completed',
-        hash: '0x7f8b3c9d2e4f6a1b5c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
-    },
-    {
-        id: 'TXN002',
-        type: 'Exchange',
-        amount: '₹45625.00',
-        date: '2026-02-04 11:15',
-        status: 'Completed',
-        hash: '0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
-    },
-    {
-        id: 'TXN003',
-        type: 'Withdraw',
-        amount: '250.00 USDT',
-        date: '2026-02-03 09:45',
-        status: 'Pending',
-        hash: '0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5',
-    },
-    {
-        id: 'TXN004',
-        type: 'Deposit',
-        amount: '1000.00 USDT',
-        date: '2026-02-02 16:20',
-        status: 'Completed',
-        hash: '0xf6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7',
-    },
-    {
-        id: 'TXN005',
-        type: 'Exchange',
-        amount: '₹18250.00',
-        date: '2026-02-01 13:00',
-        status: 'Failed',
-        hash: '0xb8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9',
-    },
-];
-
 const FILTER_TABS: FilterTab[] = ['All', 'Deposits', 'Exchange', 'Withdraw'];
 
-// ─── Helpers ─────────────────────────────────────────────
+// maps backend order status to display status
+function mapOrderStatus(status: string): TransactionStatus {
+    switch (status.toLowerCase()) {
+        case 'completed':
+        case 'success':
+            return 'Completed';
+        case 'pending':
+        case 'processing':
+            return 'Pending';
+        case 'failed':
+        case 'cancelled':
+            return 'Failed';
+        default:
+            return 'Pending';
+    }
+}
+
+function mapOrderToTransaction(order: ExchangeOrder): Transaction {
+    return {
+        id: order.id,
+        type: 'Exchange',
+        amount: `₹${order.inr_amount?.toFixed(2) || '0.00'}`,
+        date: new Date(order.created_at).toLocaleString('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        }),
+        status: mapOrderStatus(order.status),
+        hash: order.id,
+    };
+}
+
 function getTypeIcon(type: TransactionType): string {
     switch (type) {
         case 'Deposit':
@@ -116,7 +106,7 @@ function getStatusIcon(status: TransactionStatus): string {
     }
 }
 
-// ─── Filter Tab Component ────────────────────────────────
+
 function FilterTabBar({
     activeFilter,
     onSelect,
@@ -150,7 +140,7 @@ function FilterTabBar({
     );
 }
 
-// ─── Transaction Row Component ───────────────────────────
+
 function TransactionRow({
     item,
     onPress,
@@ -194,7 +184,7 @@ function TransactionRow({
     );
 }
 
-// ─── Transaction Detail Modal ────────────────────────────
+
 function TransactionDetailModal({
     visible,
     transaction,
@@ -316,13 +306,29 @@ function DetailRow({
     );
 }
 
-// ─── Main Screen ─────────────────────────────────────────
+
 export default function HistoryScreen() {
     const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
     const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const filtered = TRANSACTIONS.filter((txn) => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const orders = await getOrders();
+                const mapped = (Array.isArray(orders) ? orders : []).map(mapOrderToTransaction);
+                setTransactions(mapped);
+            } catch {
+                setTransactions([]);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const filtered = transactions.filter((txn) => {
         if (activeFilter === 'All') return true;
         if (activeFilter === 'Deposits') return txn.type === 'Deposit';
         if (activeFilter === 'Exchange') return txn.type === 'Exchange';
@@ -379,7 +385,6 @@ export default function HistoryScreen() {
     );
 }
 
-// ─── Styles ──────────────────────────────────────────────
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
@@ -528,7 +533,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
-    // ── Modal ────────────────────────
+    // modal
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',

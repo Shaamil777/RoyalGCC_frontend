@@ -9,10 +9,7 @@ interface DocumentUploadProps {
     fileName?: string | null;
 }
 
-/**
- * Dashed-border upload box with upload icon and label.
- * Shows file name if a file has been selected.
- */
+// dashed upload box, shows filename when selected
 export function DocumentUpload({
     label,
     buttonText,

@@ -1,5 +1,8 @@
 import { OtpInput, ResendTimer } from '@/components/auth';
 import { AppColors } from '@/constants/colors';
+import { login, sendOtp } from '@/services/auth';
+import { ApiError } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -19,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function OtpScreen() {
     const { phone } = useLocalSearchParams<{ phone: string }>();
     const [otp, setOtp] = useState('');
+    const { setUser } = useAuth();
 
     const handleOtpChange = (value: string) => {
         setOtp(value);
@@ -31,22 +35,33 @@ export default function OtpScreen() {
 
     const handleVerify = async (otpValue: string) => {
         try {
-            // TODO: Integrate with backend OTP verification API
-            console.log(`Verifying OTP: ${otpValue} for phone: ${phone}`);
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            // Navigate to KYC screen after successful verification
-            router.replace('/kyc');
+            // Use the phone number as the accountNumber for login
+            const result = await login(phone || '', otpValue);
+            setUser(result.user);
+
+            // Navigate based on KYC status
+            if (result.user.kyc_status === 'not_submitted') {
+                router.replace('/kyc');
+            } else if (result.user.kyc_status === 'pending') {
+                router.replace('/verification-pending');
+            } else {
+                router.replace('/(tabs)');
+            }
         } catch (error) {
-            Alert.alert('Error', 'Invalid OTP. Please try again.');
+            const message = error instanceof ApiError ? error.message : 'Invalid OTP. Please try again.';
+            Alert.alert('Error', message);
             setOtp('');
         }
     };
 
-    const handleResend = () => {
-        // TODO: Integrate with backend resend OTP API
-        console.log(`Resending OTP to ${phone}`);
-        Alert.alert('OTP Sent', `A new OTP has been sent to ${phone}`);
+    const handleResend = async () => {
+        try {
+            await sendOtp(phone || '');
+            Alert.alert('OTP Sent', `A new OTP has been sent to ${phone}`);
+        } catch (error) {
+            const message = error instanceof ApiError ? error.message : 'Failed to resend OTP.';
+            Alert.alert('Error', message);
+        }
     };
 
     return (
@@ -88,13 +103,7 @@ export default function OtpScreen() {
                         {/* Resend Timer */}
                         <ResendTimer duration={30} onResend={handleResend} />
 
-                        {/* Demo Hint */}
-                        <View style={styles.hintBox}>
-                            <Text style={styles.hintText}>
-                                💡 For demo: Use any 6-digit code or{' '}
-                                <Text style={styles.hintHighlight}>123456</Text>
-                            </Text>
-                        </View>
+
                     </View>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>

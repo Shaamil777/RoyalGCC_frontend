@@ -1,8 +1,10 @@
 import { AppColors } from '@/constants/colors';
+import { useAuth } from '@/contexts/AuthContext';
+import { getKycStatus } from '@/services/kyc';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ProfileMenuItemProps {
@@ -71,10 +73,23 @@ function ProfileMenuItem({
 }
 
 export default function ProfileScreen() {
+    const { user, handleLogout } = useAuth();
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [kycStatus, setKycStatus] = useState<string>(user?.kyc_status || 'unknown');
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await getKycStatus();
+                setKycStatus(result.kyc_status || 'unknown');
+            } catch {
+                // keep user's existing status
+            }
+        })();
+    }, []);
 
     const handleOpenPasswordModal = () => {
         setShowPasswordModal(true);
@@ -86,6 +101,24 @@ export default function ProfileScreen() {
         setNewPassword('');
         setConfirmPassword('');
     };
+
+    const onLogout = () => {
+        Alert.alert('Log Out', 'Are you sure you want to log out?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Log Out',
+                style: 'destructive',
+                onPress: async () => {
+                    await handleLogout();
+                    router.replace('/login');
+                },
+            },
+        ]);
+    };
+
+    const kycBadgeText = kycStatus === 'verified' ? '✓ KYC Verified' : kycStatus === 'pending' ? '◷ KYC Pending' : '✕ KYC Not Verified';
+    const kycSubtitleText = kycStatus === 'verified' ? 'Verified' : kycStatus === 'pending' ? 'Pending' : 'Not Submitted';
+    const kycSubtitleColor = kycStatus === 'verified' ? AppColors.success : kycStatus === 'pending' ? '#F59E0B' : '#EF4444';
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -113,12 +146,12 @@ export default function ProfileScreen() {
                             <Text style={styles.avatarIcon}>✦</Text>
                         </View>
                         <View style={styles.flexFill}>
-                            <Text style={styles.userName}>User #12345</Text>
-                            <Text style={styles.memberSince}>Member since Feb 2026</Text>
+                            <Text style={styles.userName}>{user?.account_holder_name || 'User'}</Text>
+                            <Text style={styles.memberSince}>{user?.created_at ? `Member since ${new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : 'Member'}</Text>
                         </View>
                     </View>
                     <View style={styles.kycBadge}>
-                        <Text style={styles.kycBadgeText}>✓ KYC Verified</Text>
+                        <Text style={styles.kycBadgeText}>{kycBadgeText}</Text>
                     </View>
                 </View>
 
@@ -128,20 +161,20 @@ export default function ProfileScreen() {
                     <ProfileMenuItem
                         icon="📞"
                         label="Mobile Number"
-                        subtitle="+91 98765 43210"
+                        subtitle={user?.account_number || 'N/A'}
                         showArrow={false}
                     />
                     <ProfileMenuItem
                         icon="👤"
                         label="User ID"
-                        subtitle="UID12345"
+                        subtitle={user?.id ? `UID${user.id.slice(0, 8)}` : 'N/A'}
                         showArrow={false}
                     />
                     <ProfileMenuItem
                         icon="✓"
                         label="KYC Status"
-                        subtitle="Verified"
-                        subtitleColor={AppColors.success}
+                        subtitle={kycSubtitleText}
+                        subtitleColor={kycSubtitleColor}
                         showArrow={true}
                     />
                 </View>
@@ -178,7 +211,7 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Logout Button */}
-                <TouchableOpacity style={styles.logoutButton} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.logoutButton} activeOpacity={0.7} onPress={onLogout}>
                     <Text style={styles.logoutText}>Log Out</Text>
                 </TouchableOpacity>
 
@@ -186,7 +219,7 @@ export default function ProfileScreen() {
                 <View style={styles.bottomSpacer} />
             </ScrollView>
 
-            {/* ==================== CHANGE PASSWORD MODAL ==================== */}
+            {/* Change password modal */}
             <Modal
                 visible={showPasswordModal}
                 transparent
@@ -433,7 +466,7 @@ const styles = StyleSheet.create({
         color: AppColors.danger,
     },
 
-    // =================== CHANGE PASSWORD MODAL ===================
+    // change password modal
     modalOverlay: {
         flex: 1,
         backgroundColor: AppColors.overlayDark,

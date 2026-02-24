@@ -7,10 +7,7 @@ interface ResendTimerProps {
     onResend: () => void;
 }
 
-/**
- * Resend OTP countdown timer.
- * Shows "Resend OTP in Xs" while counting, then a tappable "Resend OTP" button.
- */
+// countdown timer for resending otp
 export function ResendTimer({ duration = 30, onResend }: ResendTimerProps) {
     const [seconds, setSeconds] = useState(duration);
     const [canResend, setCanResend] = useState(false);

@@ -1,4 +1,7 @@
 import { AppColors } from '@/constants/colors';
+import { useAuth } from '@/contexts/AuthContext';
+import { getBalance } from '@/services/wallet';
+import { getRate } from '@/services/exchange';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -13,11 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const USDT_BALANCE = 1250.50;
-
-/**
- * Format a number in Indian numbering system (e.g. 1,14,108.13)
- */
+// format in indian numbering (e.g. 1,14,108.13)
 function formatINR(amount: number): string {
     const [intPart, decPart] = amount.toFixed(2).split('.');
     // Indian grouping: last 3 digits, then groups of 2
@@ -40,28 +39,46 @@ function formatINR(amount: number): string {
 }
 
 export default function HomeScreen() {
+    const { user } = useAuth();
+    const [usdtBalance, setUsdtBalance] = useState<number>(0);
     const [usdtInrRate, setUsdtInrRate] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<string>('--');
     const [balanceVisible, setBalanceVisible] = useState(true);
 
-    const fetchRate = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr'
-            );
-            const data = await response.json();
-            if (data?.tether?.inr) {
-                setUsdtInrRate(data.tether.inr);
-                const now = new Date();
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                setLastUpdated(`${hours}:${minutes}`);
+
+            // Fetch balance and rate in parallel
+            const [balanceResult, rateResult] = await Promise.allSettled([
+                getBalance(),
+                getRate(),
+            ]);
+
+            if (balanceResult.status === 'fulfilled') {
+                setUsdtBalance(balanceResult.value.available_balance || 0);
             }
+
+            if (rateResult.status === 'fulfilled') {
+                setUsdtInrRate(rateResult.value.rate);
+            } else {
+                // Fallback to CoinGecko if backend rate fails
+                try {
+                    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr');
+                    const data = await res.json();
+                    if (data?.tether?.inr) setUsdtInrRate(data.tether.inr);
+                } catch {
+                    setUsdtInrRate(91.25);
+                }
+            }
+
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            setLastUpdated(`${hours}:${minutes}`);
         } catch (error) {
-            console.warn('Failed to fetch USDT/INR rate:', error);
-            // Fallback rate
+            console.warn('Failed to fetch data:', error);
             setUsdtInrRate(91.25);
             setLastUpdated('Offline');
         } finally {
@@ -70,13 +87,13 @@ export default function HomeScreen() {
     }, []);
 
     useEffect(() => {
-        fetchRate();
+        fetchData();
         // Refresh every 60 seconds
-        const interval = setInterval(fetchRate, 60000);
+        const interval = setInterval(fetchData, 60000);
         return () => clearInterval(interval);
-    }, [fetchRate]);
+    }, [fetchData]);
 
-    const inrBalance = usdtInrRate ? USDT_BALANCE * usdtInrRate : 0;
+    const inrBalance = usdtInrRate ? usdtBalance * usdtInrRate : 0;
     const rateDisplay = usdtInrRate ? `1 USDT = ₹${usdtInrRate.toFixed(2)} INR` : 'Loading...';
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -94,7 +111,7 @@ export default function HomeScreen() {
                         </View>
                         <View>
                             <Text style={styles.welcomeText}>Welcome back,</Text>
-                            <Text style={styles.userName}>User #12345</Text>
+                            <Text style={styles.userName}>{user?.account_holder_name || 'User'}</Text>
                         </View>
                     </View>
                     <View style={styles.headerRight}>
@@ -122,7 +139,7 @@ export default function HomeScreen() {
                     </View>
 
                     <Text style={styles.balanceAmount}>
-                        {balanceVisible ? USDT_BALANCE.toFixed(2) : '••••••'} <Text style={styles.balanceCurrency}>USDT</Text>
+                        {balanceVisible ? usdtBalance.toFixed(2) : '••••••'} <Text style={styles.balanceCurrency}>USDT</Text>
                     </Text>
 
                     <Text style={styles.balanceInr}>
@@ -140,7 +157,7 @@ export default function HomeScreen() {
                         </View>
                         <TouchableOpacity
                             style={styles.liveBadge}
-                            onPress={fetchRate}
+                            onPress={fetchData}
                             activeOpacity={0.7}
                         >
                             {loading ? (
@@ -192,7 +209,7 @@ export default function HomeScreen() {
                         </View>
                         <View style={styles.assetRight}>
                             <Text style={styles.assetBalance}>
-                                {balanceVisible ? USDT_BALANCE.toFixed(2) : '••••••'}
+                                {balanceVisible ? usdtBalance.toFixed(2) : '••••••'}
                             </Text>
                             <Text style={styles.assetInr}>
                                 {balanceVisible

@@ -8,9 +8,6 @@ interface PhoneInputProps {
     placeholder?: string;
 }
 
-/**
- * Styled phone number text input with dark theme.
- */
 export function PhoneInput({
     value,
     onChangeText,

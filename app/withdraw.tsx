@@ -1,7 +1,8 @@
 import { AppColors } from '@/constants/colors';
+import { getBalance } from '@/services/wallet';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -12,20 +13,31 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const USDT_BALANCE = 1250.50;
 const MIN_WITHDRAWAL = 20;
 
 export default function WithdrawScreen() {
     const [address, setAddress] = useState('');
     const [amount, setAmount] = useState('');
     const [txnPassword, setTxnPassword] = useState('');
+    const [usdtBalance, setUsdtBalance] = useState<number>(0);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await getBalance();
+                setUsdtBalance(result.available_balance || 0);
+            } catch {
+                // keep 0 fallback
+            }
+        })();
+    }, []);
 
     const parsedAmount = parseFloat(amount) || 0;
     const serviceFee = 0;
     const youReceive = parsedAmount > 0 ? (parsedAmount - serviceFee).toFixed(2) : '0.00';
 
     const handleMax = () => {
-        setAmount(USDT_BALANCE.toFixed(2));
+        setAmount(usdtBalance.toFixed(2));
     };
 
     return (
@@ -62,7 +74,7 @@ export default function WithdrawScreen() {
                 {/* Available Balance */}
                 <View style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Available Balance</Text>
-                    <Text style={styles.balanceValue}>{USDT_BALANCE.toFixed(2)} USDT</Text>
+                    <Text style={styles.balanceValue}>{usdtBalance.toFixed(2)} USDT</Text>
                 </View>
 
                 {/* Withdrawal Address */}

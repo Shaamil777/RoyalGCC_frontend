@@ -22,9 +22,6 @@ interface IdTypePickerProps {
     onSelect: (type: string) => void;
 }
 
-/**
- * ID Type dropdown picker with modal selection.
- */
 export function IdTypePicker({ selected, onSelect }: IdTypePickerProps) {
     const [modalVisible, setModalVisible] = useState(false);
 

@@ -6,10 +6,7 @@ interface LogoProps {
     size?: number;
 }
 
-/**
- * RoyalGCC brand logo — a 3x3 golden grid pattern
- * with rounded corners and a diamond-shaped gap.
- */
+// 3x3 golden grid logo with diamond gap
 export function Logo({ size = 64 }: LogoProps) {
     const cellSize = size / 4;
     const gap = cellSize * 0.25;

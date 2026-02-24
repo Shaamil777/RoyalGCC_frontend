@@ -1,8 +1,13 @@
 import { AppColors } from '@/constants/colors';
+import { getRate, createOrder } from '@/services/exchange';
+import { getBalance } from '@/services/wallet';
+import { ApiError } from '@/services/api';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     Modal,
     ScrollView,
     StyleSheet,
@@ -13,10 +18,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const USDT_BALANCE = 1250.50;
 const QUICK_AMOUNTS = [5000, 10000, 25000];
 
-// Sample bank accounts data
+// Sample bank accounts data (temporary until backend bank management is available)
 const SAMPLE_BANK_ACCOUNTS = [
     {
         id: '1',
@@ -41,10 +45,12 @@ export default function ExchangeScreen() {
     const [usdtAmount, setUsdtAmount] = useState('');
     const [rate, setRate] = useState<number>(91.25);
     const [rateLoading, setRateLoading] = useState(true);
+    const [usdtBalance, setUsdtBalance] = useState<number>(0);
     const [txnPassword, setTxnPassword] = useState('');
     const [showBankAccounts, setShowBankAccounts] = useState(false);
     const [showAddBank, setShowAddBank] = useState(false);
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
 
     // Add bank form state
     const [newAccountHolder, setNewAccountHolder] = useState('');
@@ -52,15 +58,29 @@ export default function ExchangeScreen() {
     const [newIfscCode, setNewIfscCode] = useState('');
     const [newBankName, setNewBankName] = useState('');
 
-    // Fetch live rate
+    // Fetch live rate and balance from backend
     useEffect(() => {
         (async () => {
             try {
-                const res = await fetch(
-                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr'
-                );
-                const data = await res.json();
-                if (data?.tether?.inr) setRate(data.tether.inr);
+                const [rateResult, balanceResult] = await Promise.allSettled([
+                    getRate(),
+                    getBalance(),
+                ]);
+
+                if (rateResult.status === 'fulfilled') {
+                    setRate(rateResult.value.rate);
+                } else {
+                    // Fallback to CoinGecko
+                    try {
+                        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr');
+                        const data = await res.json();
+                        if (data?.tether?.inr) setRate(data.tether.inr);
+                    } catch { /* keep fallback */ }
+                }
+
+                if (balanceResult.status === 'fulfilled') {
+                    setUsdtBalance(balanceResult.value.available_balance || 0);
+                }
             } catch {
                 // keep fallback
             } finally {
@@ -147,7 +167,7 @@ export default function ExchangeScreen() {
                 {/* Available Balance */}
                 <View style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Available Balance</Text>
-                    <Text style={styles.balanceValue}>{USDT_BALANCE.toFixed(2)} USDT</Text>
+                    <Text style={styles.balanceValue}>{usdtBalance.toFixed(2)} USDT</Text>
                 </View>
 
                 {/* You Receive (INR) */}
@@ -237,8 +257,48 @@ export default function ExchangeScreen() {
                 </View>
 
                 {/* Confirm */}
-                <TouchableOpacity style={styles.confirmButton} activeOpacity={0.8}>
-                    <Text style={styles.confirmText}>Confirm Exchange</Text>
+                <TouchableOpacity
+                    style={[styles.confirmButton, submitting && { opacity: 0.6 }]}
+                    activeOpacity={0.8}
+                    disabled={submitting}
+                    onPress={async () => {
+                        if (!parsedUsdt || parsedUsdt <= 0) {
+                            Alert.alert('Invalid Amount', 'Please enter a valid amount to exchange.');
+                            return;
+                        }
+                        if (parsedUsdt > usdtBalance) {
+                            Alert.alert('Insufficient Balance', 'You do not have enough USDT for this exchange.');
+                            return;
+                        }
+                        if (!selectedBank) {
+                            Alert.alert('No Bank Selected', 'Please select a bank account to receive funds.');
+                            return;
+                        }
+
+                        setSubmitting(true);
+                        try {
+                            const order = await createOrder({
+                                usdtAmount: parsedUsdt,
+                                bankAccountId: selectedBank,
+                            });
+                            Alert.alert(
+                                'Exchange Submitted!',
+                                `Your order for ${parsedUsdt.toFixed(2)} USDT → ₹${parsedInr.toFixed(2)} INR has been placed.`,
+                                [{ text: 'OK', onPress: () => router.back() }]
+                            );
+                        } catch (error) {
+                            const message = error instanceof ApiError ? error.message : 'Failed to create exchange order.';
+                            Alert.alert('Error', message);
+                        } finally {
+                            setSubmitting(false);
+                        }
+                    }}
+                >
+                    {submitting ? (
+                        <ActivityIndicator color="#000" />
+                    ) : (
+                        <Text style={styles.confirmText}>Confirm Exchange</Text>
+                    )}
                 </TouchableOpacity>
 
                 {/* Footer Note */}
@@ -250,7 +310,7 @@ export default function ExchangeScreen() {
                 </View>
             </ScrollView>
 
-            {/* ==================== BANK ACCOUNTS MODAL ==================== */}
+            {/* Bank accounts modal */}
             <Modal
                 visible={showBankAccounts}
                 transparent
@@ -330,7 +390,7 @@ export default function ExchangeScreen() {
                 </View>
             </Modal>
 
-            {/* ==================== ADD BANK ACCOUNT MODAL ==================== */}
+            {/* Add bank modal */}
             <Modal
                 visible={showAddBank}
                 transparent
@@ -606,7 +666,7 @@ const styles = StyleSheet.create({
     footerIcon: { fontSize: 14 },
     footerText: { fontSize: 13, color: AppColors.textSecondary, lineHeight: 20, flex: 1 },
 
-    // =================== BANK ACCOUNTS MODAL ===================
+    // bank accounts modal
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -723,7 +783,7 @@ const styles = StyleSheet.create({
         color: AppColors.textPrimary,
     },
 
-    // =================== ADD BANK MODAL ===================
+    // add bank modal
     addBankModal: {
         backgroundColor: AppColors.backgroundSecondary,
         borderTopLeftRadius: 24,

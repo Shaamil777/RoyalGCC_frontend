@@ -1,44 +1,10 @@
 import { AppColors } from '@/constants/colors';
+import { getReferralStats, ReferralStats } from '@/services/referral';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Sample referral data
-const REFERRAL_CODE = 'CRYPTO12345';
-const REFERRAL_LINK = `https://cryptoinr.app/ref/${REFERRAL_CODE}`;
-
-const REFERRAL_HISTORY = [
-    {
-        id: '1',
-        user: 'User****1234',
-        joinedDate: '2026-02-01',
-        earnings: '+₹125.50',
-        status: 'active' as const,
-    },
-    {
-        id: '2',
-        user: 'User****5678',
-        joinedDate: '2026-01-28',
-        earnings: '+₹340.25',
-        status: 'active' as const,
-    },
-    {
-        id: '3',
-        user: 'User****9012',
-        joinedDate: '2026-01-25',
-        earnings: '+₹89.00',
-        status: 'inactive' as const,
-    },
-    {
-        id: '4',
-        user: 'User****3456',
-        joinedDate: '2026-01-20',
-        earnings: '+₹567.80',
-        status: 'active' as const,
-    },
-];
 
 const HOW_IT_WORKS = [
     {
@@ -59,6 +25,44 @@ const HOW_IT_WORKS = [
 ];
 
 export default function ReferralScreen() {
+    const [stats, setStats] = useState<ReferralStats | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await getReferralStats();
+                setStats(result);
+            } catch {
+                // Use empty fallback
+                setStats({
+                    referral_code: 'N/A',
+                    total_referrals: 0,
+                    total_earnings: 0,
+                    commission_rate: 0.3,
+                    referrals: [],
+                });
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const referralCode = stats?.referral_code || 'N/A';
+    const referralLink = `https://cryptoinr.app/ref/${referralCode}`;
+    const referralHistory = stats?.referrals || [];
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <StatusBar style="light" />
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={AppColors.gold} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <StatusBar style="light" />
@@ -74,7 +78,7 @@ export default function ReferralScreen() {
                     </TouchableOpacity>
                     <View>
                         <Text style={styles.title}>Referral Program</Text>
-                        <Text style={styles.subtitle}>Earn 0.3% on every trade</Text>
+                        <Text style={styles.subtitle}>Earn {stats?.commission_rate || 0.3}% on every trade</Text>
                     </View>
                 </View>
 
@@ -84,7 +88,7 @@ export default function ReferralScreen() {
                         <Text style={styles.earningsHeaderIcon}>🏆</Text>
                         <Text style={styles.earningsHeaderText}>Total Earnings</Text>
                     </View>
-                    <Text style={styles.earningsAmount}>₹2,450.75</Text>
+                    <Text style={styles.earningsAmount}>₹{(stats?.total_earnings || 0).toFixed(2)}</Text>
 
                     <View style={styles.statsRow}>
                         <View style={styles.statBox}>
@@ -92,14 +96,14 @@ export default function ReferralScreen() {
                                 <Text style={styles.statIcon}>👥</Text>
                                 <Text style={styles.statLabel}>Total Referrals</Text>
                             </View>
-                            <Text style={styles.statValue}>12</Text>
+                            <Text style={styles.statValue}>{stats?.total_referrals || 0}</Text>
                         </View>
                         <View style={styles.statBox}>
                             <View style={styles.statLabelRow}>
                                 <Text style={styles.statIcon}>📈</Text>
                                 <Text style={styles.statLabel}>Commission Rate</Text>
                             </View>
-                            <Text style={styles.statValue}>0.3%</Text>
+                            <Text style={styles.statValue}>{stats?.commission_rate || 0.3}%</Text>
                         </View>
                     </View>
                 </View>
@@ -109,7 +113,7 @@ export default function ReferralScreen() {
                 <View style={styles.referralCodeCard}>
                     <Text style={styles.referralCodeLabel}>Referral Code</Text>
                     <View style={styles.referralCodeRow}>
-                        <Text style={styles.referralCodeText}>{REFERRAL_CODE}</Text>
+                        <Text style={styles.referralCodeText}>{referralCode}</Text>
                         <TouchableOpacity style={styles.copyButton} activeOpacity={0.7}>
                             <Text style={styles.copyIcon}>📋</Text>
                         </TouchableOpacity>
@@ -118,7 +122,7 @@ export default function ReferralScreen() {
                     <Text style={styles.referralLinkLabel}>Referral Link</Text>
                     <View style={styles.referralLinkBox}>
                         <Text style={styles.referralLinkText} numberOfLines={1}>
-                            {REFERRAL_LINK}
+                            {referralLink}
                         </Text>
                     </View>
 
@@ -152,45 +156,51 @@ export default function ReferralScreen() {
 
                 {/* Referral History */}
                 <Text style={styles.sectionTitle}>Referral History</Text>
-                {REFERRAL_HISTORY.map((item) => (
-                    <View key={item.id} style={styles.historyCard}>
-                        <View style={styles.historyTop}>
-                            <Text style={styles.historyUser}>{item.user}</Text>
-                            <View
-                                style={[
-                                    styles.statusBadge,
-                                    item.status === 'active'
-                                        ? styles.statusActive
-                                        : styles.statusInactive,
-                                ]}
-                            >
-                                <Text
+                {referralHistory.length > 0 ? (
+                    referralHistory.map((item) => (
+                        <View key={item.id} style={styles.historyCard}>
+                            <View style={styles.historyTop}>
+                                <Text style={styles.historyUser}>{item.user}</Text>
+                                <View
                                     style={[
-                                        styles.statusText,
+                                        styles.statusBadge,
                                         item.status === 'active'
-                                            ? styles.statusTextActive
-                                            : styles.statusTextInactive,
+                                            ? styles.statusActive
+                                            : styles.statusInactive,
                                     ]}
                                 >
-                                    {item.status}
+                                    <Text
+                                        style={[
+                                            styles.statusText,
+                                            item.status === 'active'
+                                                ? styles.statusTextActive
+                                                : styles.statusTextInactive,
+                                        ]}
+                                    >
+                                        {item.status}
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={styles.historyBottom}>
+                                <Text style={styles.historyDate}>Joined {item.joined_date}</Text>
+                                <Text
+                                    style={[
+                                        styles.historyEarnings,
+                                        item.status === 'active'
+                                            ? styles.earningsActive
+                                            : styles.earningsInactive,
+                                    ]}
+                                >
+                                    +₹{item.earnings.toFixed(2)}
                                 </Text>
                             </View>
                         </View>
-                        <View style={styles.historyBottom}>
-                            <Text style={styles.historyDate}>Joined {item.joinedDate}</Text>
-                            <Text
-                                style={[
-                                    styles.historyEarnings,
-                                    item.status === 'active'
-                                        ? styles.earningsActive
-                                        : styles.earningsInactive,
-                                ]}
-                            >
-                                {item.earnings}
-                            </Text>
-                        </View>
+                    ))
+                ) : (
+                    <View style={styles.historyCard}>
+                        <Text style={[styles.historyUser, { textAlign: 'center' }]}>No referrals yet</Text>
                     </View>
-                ))}
+                )}
 
                 <View style={styles.bottomSpacer} />
             </ScrollView>

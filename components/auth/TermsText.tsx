@@ -7,9 +7,6 @@ interface TermsTextProps {
     onPrivacyPress?: () => void;
 }
 
-/**
- * Terms of Service and Privacy Policy footer text.
- */
 export function TermsText({ onTermsPress, onPrivacyPress }: TermsTextProps) {
     return (
         <Text style={styles.container}>

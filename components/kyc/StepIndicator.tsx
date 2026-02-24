@@ -11,10 +11,7 @@ interface StepIndicatorProps {
     currentStep: number;
 }
 
-/**
- * Two-step progress indicator with gold active/completed underline.
- * Steps before the current step are shown as completed (gold line).
- */
+// step progress bar with gold active state
 export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
     return (
         <View style={styles.container}>

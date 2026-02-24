@@ -13,9 +13,6 @@ interface SendOtpButtonProps {
     loading?: boolean;
 }
 
-/**
- * Gold-themed "Send OTP" button with loading state.
- */
 export function SendOtpButton({
     onPress,
     disabled = false,

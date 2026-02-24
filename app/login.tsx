@@ -7,6 +7,8 @@ import {
     TermsText,
 } from '@/components/auth';
 import { AppColors } from '@/constants/colors';
+import { sendOtp } from '@/services/auth';
+import { ApiError } from '@/services/api';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -43,17 +45,16 @@ export default function LoginScreen() {
 
         setLoading(true);
         try {
-            // TODO: Integrate with backend OTP API
-            console.log(`Sending OTP to ${selectedCountry.dialCode}${phoneNumber}`);
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const accountNumber = `${selectedCountry.dialCode}${phoneNumber}`;
+            await sendOtp(accountNumber);
             // Navigate to OTP screen with phone number
             router.push({
                 pathname: '/otp',
-                params: { phone: `${selectedCountry.dialCode}${phoneNumber}` },
+                params: { phone: accountNumber },
             });
         } catch (error) {
-            Alert.alert('Error', 'Failed to send OTP. Please try again.');
+            const message = error instanceof ApiError ? error.message : 'Failed to send OTP. Please try again.';
+            Alert.alert('Error', message);
         } finally {
             setLoading(false);
         }

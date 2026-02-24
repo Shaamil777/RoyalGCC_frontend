@@ -5,9 +5,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-/**
- * Animated loading dots indicator.
- */
+// animated loading dots
 function LoadingDots() {
     const dot1 = useRef(new Animated.Value(0.3)).current;
     const dot2 = useRef(new Animated.Value(0.3)).current;

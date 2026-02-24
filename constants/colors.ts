@@ -1,7 +1,4 @@
-/**
- * App-wide color tokens
- * Derived from the RoyalGCC dark theme design system.
- */
+// dark theme color tokens
 
 export const AppColors = {
     // Backgrounds

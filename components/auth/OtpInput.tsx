@@ -14,10 +14,7 @@ interface OtpInputProps {
     onChange: (otp: string) => void;
 }
 
-/**
- * 6-digit OTP input with individual styled boxes.
- * Auto-focuses next box on input, handles backspace navigation.
- */
+// individual styled boxes for 6-digit otp, auto-advances on input
 export function OtpInput({ length = 6, value, onChange }: OtpInputProps) {
     const inputRefs = useRef<(TextInput | null)[]>([]);
     const digits = value.split('').concat(Array(length).fill('')).slice(0, length);

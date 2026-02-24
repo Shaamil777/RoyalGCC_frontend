@@ -1,9 +1,11 @@
 import { AppColors } from '@/constants/colors';
+import { generateDepositAddress } from '@/services/wallet';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     ScrollView,
     StyleSheet,
@@ -13,11 +15,26 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DEPOSIT_ADDRESS = 'TXh4KVqJR8Zn9YmPzQwKfL3tUcBdMx7Swe';
 const EXPIRY_SECONDS = 30 * 60; // 30 minutes
 
 export default function DepositScreen() {
     const [timeLeft, setTimeLeft] = useState(EXPIRY_SECONDS);
+    const [depositAddress, setDepositAddress] = useState<string>('');
+    const [addressLoading, setAddressLoading] = useState(true);
+
+    // Fetch deposit address from backend
+    useEffect(() => {
+        (async () => {
+            try {
+                const result = await generateDepositAddress();
+                setDepositAddress(result.address || '');
+            } catch (error) {
+                Alert.alert('Error', 'Failed to generate deposit address. Please try again.');
+            } finally {
+                setAddressLoading(false);
+            }
+        })();
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -31,9 +48,10 @@ export default function DepositScreen() {
     const progress = timeLeft / EXPIRY_SECONDS;
 
     const handleCopyAddress = useCallback(async () => {
-        await Clipboard.setStringAsync(DEPOSIT_ADDRESS);
+        if (!depositAddress) return;
+        await Clipboard.setStringAsync(depositAddress);
         Alert.alert('Copied!', 'Deposit address copied to clipboard.');
-    }, []);
+    }, [depositAddress]);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -86,7 +104,7 @@ export default function DepositScreen() {
                 <Text style={styles.addressLabel}>Deposit Address (TRC20)</Text>
                 <View style={styles.addressBox}>
                     <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
-                        {DEPOSIT_ADDRESS}
+                        {addressLoading ? 'Loading...' : (depositAddress || 'Failed to load')}
                     </Text>
                 </View>
 

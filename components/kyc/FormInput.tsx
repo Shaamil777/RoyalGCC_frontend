@@ -19,10 +19,7 @@ interface FormInputProps {
     rightIcon?: React.ReactNode;
 }
 
-/**
- * Reusable dark-themed form input with label.
- * Supports text, multiline, and tappable (for date picker etc.) modes.
- */
+// supports text, multiline, and tappable (date picker) modes
 export function FormInput({
     label,
     value,

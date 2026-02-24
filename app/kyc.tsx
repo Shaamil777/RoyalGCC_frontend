@@ -23,9 +23,7 @@ const KYC_STEPS = [
     { label: 'Documents' },
 ];
 
-/**
- * Formats a Date object into DD-MM-YYYY string.
- */
+// DD-MM-YYYY
 function formatDate(date: Date): string {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -64,8 +62,15 @@ export default function KycScreen() {
             return;
         }
 
-        // Navigate to Documents step
-        router.push('/kyc-documents');
+        // Navigate to Documents step with personal info
+        router.push({
+            pathname: '/kyc-documents',
+            params: {
+                fullName,
+                dateOfBirth: dateOfBirthText,
+                address,
+            },
+        });
     };
 
     // Max date = today (user must be born in the past)
